@@ -1,25 +1,20 @@
-import urllib2
 import Queue
 import threading
+import urllib2
 from stock import *
-from yahoo_finance import Share
 
 stock_database = []
 
-def get_stocks(start_at, end_at, queue):
+def get_stocks(start_at, end_at):
     temp_database = []
     with open('symbols.txt') as file:
         for x in range(start_at):
             file.readline()
         for x in range(end_at - start_at):
-            stock = Share(file.readline().split('|')[0])
-            if any(y.name == file.readline().split('|')[0] for y in temp_database):
-                temp_database[y].price_list.append(stock.get_price())
-            else:
-                temp_database.append(Stock(file.readline().split('|')[0]))
-                temp_database[len(temp_database) - 1].append_price(stock.get_price())
+            line = file.readline()
+            temp_database.append(Stock(line.split('|')[0]))
 
-    queue.put(temp_database)
+    return temp_database
 
 def update_database(database_a, database_b):
     for stock in database_b:
@@ -33,8 +28,16 @@ def update_stock_list():
     file.write(data)
     file.close()
 
-queue = [Queue.Queue(), Queue.Queue()]
-threading.Thread(target = get_stocks, args = (0, 5, queue[0])).start()
-threading.Thread(target = get_stocks, args = (5, 12, queue[1])).start()
-update_database(stock_database, queue[0].get())
-update_database(stock_database, queue[1].get())
+def append_prices(database):
+    queue_list = [Queue.Queue() for x in range(len(database))]
+    for x in range(len(database)):
+        threading.Thread(target = get_price, args = (database[x].name, queue_list[x],)).start()
+
+    for x in range(len(database)):
+        database[x].append_price(queue_list[x].get())
+
+update_database(stock_database, get_stocks(0, 10))
+append_prices(stock_database)
+
+for stock in stock_database:
+    print(stock.price_list[0])
