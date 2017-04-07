@@ -1,5 +1,6 @@
 import Queue
 import threading
+import time
 import urllib2
 from stock import *
 
@@ -36,8 +37,19 @@ def append_prices(database):
     for x in range(len(database)):
         database[x].append_price(queue_list[x].get())
 
-update_database(stock_database, get_stocks(0, 10))
-append_prices(stock_database)
+    return database
 
-for stock in stock_database:
-    print(stock.price_list[0])
+def remove_null(database):
+    queue_list = [Queue.Queue() for x in range(len(database))]
+    for x in range(len(database)):
+        threading.Thread(target = get_price, args = (database[x].name, queue_list[x],)).start()
+
+    return [database[x] for x in range(len(database)) if queue_list[x].get() != None]
+
+update_database(stock_database, get_stocks(0, 5))
+stock_database = remove_null(stock_database)
+while True:
+    if threading.active_count() == 1:
+        append_prices(stock_database)
+
+    time.sleep(1)
