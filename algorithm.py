@@ -37,8 +37,6 @@ def append_prices(database):
     for x in range(len(database)):
         database[x].append_price(queue_list[x].get())
 
-    return database
-
 def remove_null(database):
     queue_list = [Queue.Queue() for x in range(len(database))]
     for x in range(len(database)):
@@ -46,10 +44,27 @@ def remove_null(database):
 
     return [database[x] for x in range(len(database)) if queue_list[x].get() != None]
 
-update_database(stock_database, get_stocks(0, 5))
-stock_database = remove_null(stock_database)
-while True:
-    if threading.active_count() == 1:
-        append_prices(stock_database)
+def save_database(database):
+    file = open('database.txt', 'w')
+    for stock in database:
+        file.write(str(stock.name) + "|" + "/".join(str(x) for x in stock.price_list) + "\n")
+    file.close()
+    pass
 
-    time.sleep(1)
+def load_database(database):
+    with open('database.txt') as file:
+        for line in file:
+            database.append(Stock(line.split('|')[0], [x for x in line.split('|')[1].replace("\n", "").split('/')]))
+
+try:
+    load_database(stock_database)
+    if len(stock_database) == 0:
+        update_database(stock_database, get_stocks(0, 3))
+        stock_database = remove_null(stock_database)
+    while True:
+        if threading.active_count() == 1:
+            append_prices(stock_database)
+
+        time.sleep(1)
+except KeyboardInterrupt:
+    save_database(stock_database)
