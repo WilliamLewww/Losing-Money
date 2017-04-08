@@ -2,6 +2,7 @@ import Queue
 import threading
 import time
 import urllib2
+import cPickle as pickle
 from stock import *
 
 stock_database = []
@@ -45,19 +46,16 @@ def remove_null(database):
     return [database[x] for x in range(len(database)) if queue_list[x].get() != None]
 
 def save_database(database):
-    file = open('database.txt', 'w')
-    for stock in database:
-        file.write(str(stock.name) + "|" + "/".join(str(x) for x in stock.price_list) + "\n")
-    file.close()
-    pass
+    with open('database.pkl', 'wb') as file:
+        pickle.dump(database, file, -1)
 
-def load_database(database):
-    with open('database.txt') as file:
-        for line in file:
-            database.append(Stock(line.split('|')[0], [x for x in line.split('|')[1].replace("\n", "").split('/')]))
+def load_database():
+    with open('database.pkl', 'rb') as file:
+
+        return pickle.load(file)
 
 try:
-    load_database(stock_database)
+    stock_database = load_database()
     if len(stock_database) == 0:
         update_database(stock_database, get_stocks(0, 3))
         stock_database = remove_null(stock_database)
@@ -68,3 +66,4 @@ try:
         time.sleep(1)
 except KeyboardInterrupt:
     save_database(stock_database)
+    pass
